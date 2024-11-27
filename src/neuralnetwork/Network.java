@@ -56,9 +56,10 @@ public class Network {
 
                 ///donde guardar si es la ultima capa o no
                 if(i==layers.size()-1)
-                    output_predictions[iter]=n.calculate_prediction();
+                    output_predictions[iter]=n.calculate_prediction("sigmoid");
                 else
-                    predictions[iter]=n.calculate_prediction();
+                    predictions[iter]=n.calculate_prediction("sigmoid");
+
             }
         }
     }
@@ -82,8 +83,10 @@ public class Network {
 
                 ///recoger gradientes para la capa salida
                 if (i == layers.size() - 1) {
-                                    ///esta es la derivada del error cuadrado
+                    ///esta es la derivada del error cuadrado
+
                     n.delta_error = n.error_square_derivated (n.prediction,outputs_expected[iter]) * n.sigmoid_derivated(n.prediction);
+                    //n.delta_error = n.error_square_derivated (n.prediction,outputs_expected[iter]) *n.relu_derivated(n.prediction);
                     iter++;
                 }
 
@@ -94,10 +97,19 @@ public class Network {
                         //vemos la capa de la derecha pues esta contiene los pesos
                         sum += l_d.get(j).delta_error * l_d.get(j).weights_behind[iter];
                     }
+
+                    ///para sigmoid
                     n.delta_error=sum* n.sigmoid_derivated(n.prediction);
+
+                    ///para relu
+                    //n.delta_error=sum* n.relu_derivated(n.prediction);
+
+
                     iter++;
                 }
+                //System.out.print(n.delta_error );
             }
+            //System.out.println();
         }
 
         return 0;
@@ -134,7 +146,6 @@ public class Network {
 
 
     public void iterar(int limit, int limit_entrenamiento){
-
         for (int age=0;age<limit;age++) {
 
             for (int fila=0;fila<inputs.length && fila<limit_entrenamiento;fila++) {
@@ -142,25 +153,19 @@ public class Network {
                 backward(outputs_expected[fila]);
                 learning(inputs[fila]);
             }
-            //System.out.println("NEW ERA");
+
         }
 
     }
 
+
+
+
+
     public void testing(int ini_testeo){
-        //testear
-        //en la capa salida deberían los h(z) estar en este orden 00, 10 , 01, 00 por cada fila para xor
-
         ArrayList<Neuron> output=layers.get(layers.size()-1);
-        for (int fila=ini_testeo;fila<inputs.length;fila++) {
-            forward(inputs[fila]);
-            for(Neuron n : output){
-                System.out.print(" "+n.prediction);
-            }
-            System.out.println();
-        }
 
-
+        //vamos a testear si las neuronas producen outputs esperados
         int hits=0;
         int misses=0;
         System.out.println("aproximado: ");
@@ -187,9 +192,6 @@ public class Network {
                 System.out.print(" "+num);
                 iter++;
             }
-            //System.out.println();
-            //System.out.println(Arrays.toString(aproximados));
-            //System.out.println(Arrays.toString(resultados));
 
             if(Arrays.equals(aproximados,resultados)){
                 hits++;
@@ -202,4 +204,7 @@ public class Network {
         double tax= (double) hits /(hits+misses);
         System.out.println("HITS: "+hits+" MISSES: "+misses+" TASA IGUALDAD: "+ tax);
     }
+
+
+
 }

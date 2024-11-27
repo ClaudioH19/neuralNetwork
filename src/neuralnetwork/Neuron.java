@@ -1,7 +1,7 @@
 package neuralnetwork;
 import java.util.random.*;
 public class Neuron {
-
+    ///ESTA CLASE TIENE LAS HERRAMIENTAS PARA MANEJAR NEURONAS
     double [] weights_behind;
     double bias;
 
@@ -11,27 +11,50 @@ public class Neuron {
 
 
     public Neuron(int tam_capa) {
-
         this.weights_behind = new double[tam_capa];
         for (int i = 0; i < tam_capa; i++) {
-            weights_behind[i] = Math.random()*0.5-0.5;
-
-            //initializeWeightsXavier(tam_capa);
+            //weights_behind[i] = Math.random()*0.5-0.5;
+            initializeWeightsXavier(tam_capa);
+            //initializeWeightsHe(tam_capa);
         }
         this.bias = Math.random()-1;
-
         this.z = 0;
         this.prediction = 0;
     }
 
 
-
+    ///FUNCIONES DE ACTIVACION
     public double sigmoid(double x) {
         return 1 / (1 + Math.exp(-x));
     }
 
+    public double relu(double x){
+        if(x>0) return x;
+        else return 0;
+    }
+
+    public double calculate_prediction(String method){
+        switch (method){
+            case "sigmoid":
+                prediction=sigmoid(z);
+                break;
+            case "relu":
+                prediction=relu(z);
+                break;
+        }
+        return prediction;
+    }
+
+
+
+    ///DERIVADAS
     public double sigmoid_derivated(double x){
         return x*(1-x);
+    }
+
+    public double relu_derivated(double x){
+        if(x>0) return 1;
+        else return 0;
     }
 
     public double error_square(double target, double actual){
@@ -42,6 +65,9 @@ public class Neuron {
         return actual-target;
     }
 
+
+
+    ///CALCULAR Z
     public double calculate_z(double[] inputs){
         z=0;
         for (int i=0;i<inputs.length;i++){
@@ -51,14 +77,18 @@ public class Neuron {
         return z;
     }
 
-    public double calculate_prediction(){
-        prediction=sigmoid(z);
-        return prediction;
-    }
 
+
+    ///TIPOS DE INICIALIZACIONES
     public void initializeWeightsXavier(int inputstam) {
         for (int i = 0; i < weights_behind.length; i++) {
             weights_behind[i] =  Math.random()* Math.sqrt(1.0 / inputstam);
+        }
+    }
+
+    public void initializeWeightsHe(int tam_capa) {
+        for (int i = 0; i < weights_behind.length; i++) {
+            weights_behind[i] = Math.random() * Math.sqrt(2.0 / tam_capa);
         }
     }
 

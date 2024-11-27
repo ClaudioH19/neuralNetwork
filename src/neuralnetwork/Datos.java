@@ -10,7 +10,8 @@ public class Datos {
 
     public Datos(int limit) {
 
-        String csvFile = "C:\\Users\\claud\\Desktop\\winequality-white.csv";
+        //String csvFile = "winequality-white.csv";
+        String csvFile = "winequality-red.csv";
         List<double[]> data = new ArrayList<>();
         List<double[]> out = new ArrayList<>();
 
@@ -47,6 +48,7 @@ public class Datos {
 
         //printData();
         normalize();
+        //normalizeGlobally();
         printData();
 
     }
@@ -56,8 +58,8 @@ public class Datos {
 
     public void normalize(){
         //normalización
-        double min=100000;
-        double max=-100000;
+        double min=Double.MAX_VALUE;
+        double max=Double.MIN_VALUE;
         for (int j=0;j<inputs[0].length;j++) {
             //encontrar max y min de una col
             for (int i=0;i<inputs.length;i++) {
@@ -73,7 +75,35 @@ public class Datos {
                 inputs[i][j]=(inputs[i][j]-min)/(max-min);
             }
         }
+        min=Double.MAX_VALUE;
+        max=Double.MIN_VALUE;
     }
+
+    public void normalizeGlobally() {
+        double globalMin = Double.MAX_VALUE;
+        double globalMax = Double.MIN_VALUE;
+
+        // Encontrar globalMin y globalMax
+        for (int i = 0; i < inputs.length; i++) {
+            for (int j = 0; j < inputs[0].length; j++) {
+                if (inputs[i][j] < globalMin) {
+                    globalMin = inputs[i][j];
+                }
+                if (inputs[i][j] > globalMax) {
+                    globalMax = inputs[i][j];
+                }
+            }
+        }
+
+        // Normalizar
+        for (int i = 0; i < inputs.length; i++) {
+            for (int j = 0; j < inputs[0].length; j++) {
+                inputs[i][j] = (inputs[i][j] - globalMin) / (globalMax - globalMin);
+            }
+        }
+    }
+
+
 
 
     public void printData(){
