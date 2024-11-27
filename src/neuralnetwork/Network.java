@@ -47,21 +47,25 @@ public class Network {
 
             int iter=0;
             ///calculamos los z y predicciones
-            for(Neuron n : l){
-                //que entradas usar
-                if(i==0)
+            for (Neuron n : l) {
+                if (i == 0) { // Primera capa: usar las entradas
                     n.calculate_z(inputs);
-                else
+                } else { // Capas ocultas y de salida: usar las predicciones de la capa previa
                     n.calculate_z(predictions);
+                }
 
-                ///donde guardar si es la ultima capa o no
-                if(i==layers.size()-1)
-                    output_predictions[iter]=n.calculate_prediction("sigmoid");
-                else
-                    predictions[iter]=n.calculate_prediction("sigmoid");
-
+                // Guardar las predicciones de cada neurona
+                if (i == layers.size() - 1) { // Última capa: no aplicar activación aquí
+                    output_predictions[iter] = n.calculate_prediction("none");
+                } else { // Capas ocultas: aplicar ReLU
+                    predictions[iter] = n.calculate_prediction("relu");
+                }
+                iter++;
             }
         }
+        // Aplicar Softmax a las salidas de la última capa
+        Neuron aux=new Neuron(tam_capa);
+        output_predictions = aux.softmax(output_predictions);
     }
 
     public double backward(double[] outputs_expected) {
@@ -83,11 +87,11 @@ public class Network {
 
                 ///recoger gradientes para la capa salida
                 if (i == layers.size() - 1) {
-                    ///esta es la derivada del error cuadrado
+                    ///esta es la derivada del error cuadrado con sigmoid
+                    //n.delta_error = n.error_square_derivated (n.prediction,outputs_expected[iter]) * n.sigmoid_derivated(n.prediction);
 
-                    n.delta_error = n.error_square_derivated (n.prediction,outputs_expected[iter]) * n.sigmoid_derivated(n.prediction);
-                    //n.delta_error = n.error_square_derivated (n.prediction,outputs_expected[iter]) *n.relu_derivated(n.prediction);
-                    iter++;
+                    //esta es la derivada de cross entropy con softmax
+                    n.delta_error =n.prediction - outputs_expected[iter];
                 }
 
                 ///recoger gradientes para las capas ocultas
@@ -99,14 +103,11 @@ public class Network {
                     }
 
                     ///para sigmoid
-                    n.delta_error=sum* n.sigmoid_derivated(n.prediction);
-
+                    //n.delta_error=sum* n.sigmoid_derivated(n.prediction);
                     ///para relu
-                    //n.delta_error=sum* n.relu_derivated(n.prediction);
-
-
-                    iter++;
+                    n.delta_error=sum* n.relu_derivated(n.prediction);
                 }
+                iter++;
                 //System.out.print(n.delta_error );
             }
             //System.out.println();
@@ -119,6 +120,7 @@ public class Network {
 
 
     public void learning(double[] inputs){
+        double lambda=0.00001;
     ///recorrer las capas
         for (int k=layers.size()-1;k>=0;k--){
             ///sacar capa actual y la de la izquierda
@@ -133,20 +135,37 @@ public class Network {
 
                     ///para las capas ocultas y la de salida
                     if(k>0)
-                        n.weights_behind[i] -= learning_rate * n.delta_error * l_i.get(i).prediction;
+                        n.weights_behind[i] -= learning_rate * (n.delta_error * l_i.get(i).prediction + lambda* n.weights_behind[i]);
                     ///para la capa conectada a las entradas
                     else
-                        n.weights_behind[i]-=learning_rate * n.delta_error * inputs[i];
+                        n.weights_behind[i]-=learning_rate * (n.delta_error * inputs[i]+ lambda* n.weights_behind[i]);
 
-                    n.bias -= learning_rate * n.delta_error;
+                    n.bias -= learning_rate * (n.delta_error +lambda* n.bias);
                     }
                 }
             }
     }
 
+    public double calculateLoss() {
+        double totalLoss = 0.0;
+        for (int fila = 0; fila < inputs.length; fila++) {
+            forward(inputs[fila]);
+            for (int i = 0; i < outputs_expected[fila].length; i++) {
+                totalLoss += -outputs_expected[fila][i] * Math.log(output_predictions[i]);
+            }
+        }
+        return totalLoss / inputs.length;
+    }
+
 
     public void iterar(int limit, int limit_entrenamiento){
+
+        double initialLearningRate = learning_rate;
+        double decayRate = 0.9999;
+
         for (int age=0;age<limit;age++) {
+            learning_rate = initialLearningRate * Math.pow(decayRate, age);
+
 
             for (int fila=0;fila<inputs.length && fila<limit_entrenamiento;fila++) {
                 forward(inputs[fila]);
@@ -154,56 +173,54 @@ public class Network {
                 learning(inputs[fila]);
             }
 
+            double loss = calculateLoss();
+            //System.out.println("Época: " + age + " Pérdida Promedio: " + loss);
         }
 
     }
 
 
+    public void testing(int ini_testeo) {
+        int hits = 0;
+        int misses = 0;
 
+        System.out.println("Resultados de testeo: ");
+        for (int fila = ini_testeo; fila < inputs.length; fila++) {
+            forward(inputs[fila]); // Realiza el paso hacia adelante
 
+            double[] aproximados = new double[outputs_expected[0].length];
+            double[] resultados = outputs_expected[fila];
 
-    public void testing(int ini_testeo){
-        ArrayList<Neuron> output=layers.get(layers.size()-1);
-
-        //vamos a testear si las neuronas producen outputs esperados
-        int hits=0;
-        int misses=0;
-        System.out.println("aproximado: ");
-        for (int fila=ini_testeo;fila<inputs.length;fila++) {
-
-            forward(inputs[fila]);
-            double[] aproximados = new double[inputs[0].length];
-            double[] resultados = new double[inputs[0].length];
-            int iter=0;
-            double max=-1000;
-            //buscar el valor max
-            for(Neuron n : output){
-                if(n.prediction>max)
-                    max=n.prediction;
-            }
-            for(Neuron n : output){
-                //double num=Math.round(n.prediction);
-                double num=0;
-                //if (n.prediction>0.45) num=1;
-
-                if(n.prediction==max) num=1;
-                aproximados[iter]=num;
-                resultados[iter]=outputs_expected[fila][iter];
-                System.out.print(" "+num);
-                iter++;
+            // identificar max proba
+            int predictedClass = -1;
+            double maxProbability = -1.0;
+            for (int i = 0; i < output_predictions.length; i++) {
+                if (output_predictions[i] > maxProbability) {
+                    maxProbability = output_predictions[i];
+                    predictedClass = i;
+                }
             }
 
-            if(Arrays.equals(aproximados,resultados)){
+            // dejar en formato arreglo
+            for (int i = 0; i < aproximados.length; i++) {
+                aproximados[i] = (i == predictedClass) ? 1 : 0;
+            }
+
+            if (Arrays.equals(aproximados, resultados)) {
                 hits++;
-            }
-            else{
+            } else {
                 misses++;
             }
-            System.out.println();
+
+            System.out.println("Predicción: " + Arrays.toString(aproximados) +
+                    " Esperado: " + Arrays.toString(resultados));
         }
-        double tax= (double) hits /(hits+misses);
-        System.out.println("HITS: "+hits+" MISSES: "+misses+" TASA IGUALDAD: "+ tax);
+
+        // Calcular y mostrar la tasa de aciertos
+        double accuracy = (double) hits / (hits + misses);
+        System.out.println("HITS: " + hits + " MISSES: " + misses + " TASA DE ACIERTOS: " + accuracy);
     }
+
 
 
 

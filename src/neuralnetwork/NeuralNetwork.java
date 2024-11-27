@@ -48,17 +48,16 @@ public class NeuralNetwork {
 
 
         double learning_rate = 0.0005;
-        learning_rate = 0.445;
+        learning_rate = 0.0005;
         //Network net = new Network(2, inputs, outputs,learning_rate,2);
 
 
-        int limit=1500;
+        int limit=1599;
         Datos datos = new Datos(limit);
-        Network net = new Network(11, datos.inputs, datos.outputs,learning_rate,1);
-
-        net.iterar(5000,1000);
+        Network net = new Network(11, datos.inputs, datos.outputs,learning_rate,2);
+        net.iterar(20000,1280);
         System.out.println("Testing");
-        net.testing(1000);
+        net.testing(1280);
     }
     
 }
