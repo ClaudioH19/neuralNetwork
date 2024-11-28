@@ -4,26 +4,35 @@ import java.util.Arrays;
 
 
 public class Network {
+    //PARAMETROS
+    //double learning_rate = 0.0005;
+    //double lambda=0.00001;
+    //double decayRate = 0.9999;
+    //testing
+    //double learning_rate = 0.0005;
+    //double lambda=0.000007;
+    //double decayRate = 0.99999;
 
-    double learning_rate;
+    //testing
+    double learning_rate = 0.005;
+    double lambda=0.0000007;
+    double decayRate = 0.99999;
+
     double[][] inputs;
     double[][] outputs_expected;
     double[] output_predictions;
 
     ArrayList<ArrayList> layers;
-
     int tam_capa;
 
-    public Network(int tam_capa, double[][] inputs, double[][] outputs,double learning_rate, int tam_layers) {
-        this.learning_rate = learning_rate;
+    public Network(int tam_capa, double[][] inputs, double[][] outputs, int tam_layers) {
         this.output_predictions =new double[tam_capa];
         this.tam_capa=tam_capa;
         this.inputs = inputs;
         this.outputs_expected=outputs;
         this.layers = new ArrayList<>();
 
-
-        //crear capas
+        //crear capas de neuronas
         for (int i=0;i<tam_layers;i++){
             ArrayList<Neuron> l=new ArrayList<>();
             for (int j=0;j<tam_capa;j++){
@@ -34,118 +43,127 @@ public class Network {
 
     }
 
-    //Descompondremos la matriz de inputs para ir revisando fila por fila
+    //recorre cada capa de izq a der y cada neurona de una capa para calcular su z y su h(z) o funcion de activacion
     public void forward(double[] inputs) {
 
-        ///calcular z y predicciones para todas las neuronas
         double[] predictions = new double[tam_capa];
 
-        ///por cada capa
+        //por cada capa
         for (int i=0;i<layers.size();i++){
-            ///sacamos sus neuronas
+            //tomamos sus neuronas
             ArrayList<Neuron> l=layers.get(i);
 
             int iter=0;
-            ///calculamos los z y predicciones
+            //iteramos por cada neurona de una capa y calculamos su z
             for (Neuron n : l) {
-                if (i == 0) { // Primera capa: usar las entradas
+                //si es primera capa usa los inputs para calcular
+                if (i == 0) {
                     n.calculate_z(inputs);
-                } else { // Capas ocultas y de salida: usar las predicciones de la capa previa
+                }
+                //si es capa hidden, usa las salidas (h(z)) de las capas previas
+                else {
                     n.calculate_z(predictions);
                 }
 
-                // Guardar las predicciones de cada neurona
-                if (i == layers.size() - 1) { // Última capa: no aplicar activación aquí
-                    output_predictions[iter] = n.calculate_prediction("none");
-                } else { // Capas ocultas: aplicar ReLU
+                // si es ultima capa, no aplicamos una funcion (se aplica softmax mas adelante)
+                if (i == layers.size() - 1) {
+                    output_predictions[iter] = n.calculate_prediction("none"); //guardamos las salidas
+                }
+                // si es capa hidden, aplicamos ReLu
+                else {
                     predictions[iter] = n.calculate_prediction("relu");
                 }
+
                 iter++;
             }
         }
-        // Aplicar Softmax a las salidas de la última capa
+
+        // terminado el proceso aplicamos softmax a la capa de salida
         Neuron aux=new Neuron(tam_capa);
         output_predictions = aux.softmax(output_predictions);
     }
 
+
+    //recorremos de der a izq cada capa y cada neurona de una capa, para calcular error y gradientes
     public double backward(double[] outputs_expected) {
 
-        //recorrer cada capa
+        //recorrer cada capa de der a izq
         for (int i=layers.size()-1;i>=0;i--){
+            ArrayList<Neuron> l=layers.get(i); //llamamos l a la capa en la que estamos
+            ArrayList<Neuron> l_d=new ArrayList<>();//lamamos l_d a la capa a su derecha
 
-            ///sacar capas actual: l y capa de la derecha: l_d
-            ArrayList<Neuron> l=layers.get(i);
-            ArrayList<Neuron> l_d=new ArrayList<>();
             if(i<layers.size()-1)
                 l_d=layers.get(i+1);
 
 
             int iter=0;
-
             //Recorrer cada neurona de la capa l
             for(Neuron n : l) {
 
-                ///recoger gradientes para la capa salida
+                //Calcular gradientes para la capa salida
                 if (i == layers.size() - 1) {
-                    ///esta es la derivada del error cuadrado con sigmoid
+                    //esta es la derivada de cross entropy con softmax
+                    n.delta_error = n.prediction - outputs_expected[iter];
+
+                    //[en desuso, por peor rendimiento]
+                    //esta es la derivada del error cuadrado con sigmoid
                     //n.delta_error = n.error_square_derivated (n.prediction,outputs_expected[iter]) * n.sigmoid_derivated(n.prediction);
 
-                    //esta es la derivada de cross entropy con softmax
-                    n.delta_error =n.prediction - outputs_expected[iter];
                 }
 
-                ///recoger gradientes para las capas ocultas
+                //Calcular gradientes para las capas ocultas
                 else{
                     double sum=0;
                     for(int j=0;j<tam_capa;j++) {
-                        //vemos la capa de la derecha pues esta contiene los pesos
+                        //vemos la capa de la derecha pues esta contiene los pesos y gradiente que necesitamos para el calculo
                         sum += l_d.get(j).delta_error * l_d.get(j).weights_behind[iter];
                     }
 
-                    ///para sigmoid
-                    //n.delta_error=sum* n.sigmoid_derivated(n.prediction);
-                    ///para relu
+                    //Funcion de error derivada para relu
                     n.delta_error=sum* n.relu_derivated(n.prediction);
+
+                    //Funcion de error derivada para sigmoid [en desuso]
+                    //n.delta_error=sum* n.sigmoid_derivated(n.prediction);
                 }
                 iter++;
-                //System.out.print(n.delta_error );
+                //System.out.println(n.delta_error );
             }
-            //System.out.println();
         }
-
         return 0;
     }
 
 
 
-
+    //Una vez calculado las predicciones de las neuronas y sus gradientes, usamos esta funcion para ajustar pesos
     public void learning(double[] inputs){
-        double lambda=0.00001;
-    ///recorrer las capas
+
+        //recorremos cada capa de der a izq
         for (int k=layers.size()-1;k>=0;k--){
-            ///sacar capa actual y la de la izquierda
-            ArrayList<Neuron> l=layers.get(k);
-            ArrayList<Neuron> l_i=new ArrayList<>();
+
+            ArrayList<Neuron> l=layers.get(k); //llamamos l a la capa que estamos mirando
+            ArrayList<Neuron> l_i=new ArrayList<>(); //lamamos l_i a la capa de la izquierda
             if(k>0)
                 l_i=layers.get(k-1);
 
+            //por cada neurona de la capa, ajustamos sus pesos y bias
             for(Neuron n : l){
                 for (int i = 0; i < tam_capa; i++) {
-                    ///actualizar pesos y bias
 
-                    ///para las capas ocultas y la de salida
+                    //ajuste para las capas ocultas y la de salida + parametro lambda
                     if(k>0)
                         n.weights_behind[i] -= learning_rate * (n.delta_error * l_i.get(i).prediction + lambda* n.weights_behind[i]);
-                    ///para la capa conectada a las entradas
+                    //ajuste para la capa conectada a las entradas + parametro lambda
                     else
                         n.weights_behind[i]-=learning_rate * (n.delta_error * inputs[i]+ lambda* n.weights_behind[i]);
 
-                    n.bias -= learning_rate * (n.delta_error +lambda* n.bias);
+                    //ajuste bias
+                    n.bias -= learning_rate * (n.delta_error + lambda* n.bias);
                     }
                 }
             }
     }
 
+    //funcion para controlar la perdida
     public double calculateLoss() {
         double totalLoss = 0.0;
         for (int fila = 0; fila < inputs.length; fila++) {
@@ -158,15 +176,15 @@ public class Network {
     }
 
 
+    //aqui se realiza el backpropagation
     public void iterar(int limit, int limit_entrenamiento){
 
         double initialLearningRate = learning_rate;
-        double decayRate = 0.9999;
-
         for (int age=0;age<limit;age++) {
+            //variamos el learning_rate por epoca
             learning_rate = initialLearningRate * Math.pow(decayRate, age);
 
-
+            //por cada entrada entrenamos la red
             for (int fila=0;fila<inputs.length && fila<limit_entrenamiento;fila++) {
                 forward(inputs[fila]);
                 backward(outputs_expected[fila]);
@@ -180,18 +198,21 @@ public class Network {
     }
 
 
+    //testeamos en los datos no vistos
     public void testing(int ini_testeo) {
         int hits = 0;
         int misses = 0;
 
         System.out.println("Resultados de testeo: ");
         for (int fila = ini_testeo; fila < inputs.length; fila++) {
-            forward(inputs[fila]); // Realiza el paso hacia adelante
+
+            //hacemos un forward para ver las salidas de la red
+            forward(inputs[fila]);
 
             double[] aproximados = new double[outputs_expected[0].length];
             double[] resultados = outputs_expected[fila];
 
-            // identificar max proba
+            // identificar max proba en base a softmax
             int predictedClass = -1;
             double maxProbability = -1.0;
             for (int i = 0; i < output_predictions.length; i++) {
@@ -201,7 +222,7 @@ public class Network {
                 }
             }
 
-            // dejar en formato arreglo
+            // dejar en formato arreglo para comparar con los resultados esperados
             for (int i = 0; i < aproximados.length; i++) {
                 aproximados[i] = (i == predictedClass) ? 1 : 0;
             }
@@ -212,8 +233,7 @@ public class Network {
                 misses++;
             }
 
-            System.out.println("Predicción: " + Arrays.toString(aproximados) +
-                    " Esperado: " + Arrays.toString(resultados));
+            System.out.println("Predicción: " + Arrays.toString(aproximados) + " Esperado: " + Arrays.toString(resultados));
         }
 
         // Calcular y mostrar la tasa de aciertos

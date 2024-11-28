@@ -20,44 +20,33 @@ public class NeuralNetwork {
         double[][] inputs = new double[4][2];
         double[][] outputs = new double[4][2];
 
+        String wine = "red"; //<--- controla que vinos predecir white-red
 
-        //xor
-        inputs[0][0]=0;
-        inputs[0][1]=0;
+        //para datos del vino rojo
+        if(wine.equals("red")){
+            int limit=1599; //el limite de lectura para los datos: el idx del último dato
+            Datos datos = new Datos(limit,wine);
 
-        inputs[1][0]=1;
-        inputs[1][1]=0;
+            //11 neuronas con 1 capa de input y 2 capas: 1 hidden - 1 outputs
+            Network net = new Network(11, datos.inputs, datos.outputs,2);
 
-        inputs[2][0]=0;
-        inputs[2][1]=1;
+            net.iterar(10000,1280); //desencadena el backpropagation y entrena hasta el idx 1280
 
-        inputs[3][0]=1;
-        inputs[3][1]=1;
+            //usamos un 80% de datos para entrenar y el 20% para testear
+            System.out.println("Testing");
+            net.testing(1280); // usa los datos restantes a partir de 1280 para evaluar rendimiento
+        }
 
-        outputs[0][0]=0;
-        outputs[0][1]=0;
+        //para datos del vino blanco
+        else{
+            int limit=4899;
+            Datos datos = new Datos(limit,wine);
+            Network net = new Network(11, datos.inputs, datos.outputs,2);
+            net.iterar(10000,3919);
+            System.out.println("Testing");
+            net.testing(3919);
+        }
 
-        outputs[1][0]=1;
-        outputs[1][1]=0;
-
-        outputs[2][0]=0;
-        outputs[2][1]=1;
-
-        outputs[3][0]=0;
-        outputs[3][1]=0;
-
-
-        double learning_rate = 0.0005;
-        learning_rate = 0.0005;
-        //Network net = new Network(2, inputs, outputs,learning_rate,2);
-
-
-        int limit=1599;
-        Datos datos = new Datos(limit);
-        Network net = new Network(11, datos.inputs, datos.outputs,learning_rate,2);
-        net.iterar(20000,1280);
-        System.out.println("Testing");
-        net.testing(1280);
     }
     
 }

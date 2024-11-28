@@ -8,15 +8,19 @@ public class Datos {
     double[][] inputs;
     double[][] outputs;
 
-    public Datos(int limit) {
+    public Datos(int limit, String wine) {
 
-        //String csvFile = "winequality-white.csv";
-        String csvFile = "winequality-red.csv";
+        String csvFile = "";
+        if(wine.equals("red"))
+            csvFile = "winequality-red.csv";
+        else
+            csvFile = "winequality-white.csv";
+
         List<double[]> data = new ArrayList<>();
         List<double[]> out = new ArrayList<>();
 
         try (BufferedReader br = new BufferedReader(new FileReader(csvFile))) {
-            String line = br.readLine(); //leer encabezado
+            String line = br.readLine(); //para saltar encabezado
 
             int count=0;
             while ((line = br.readLine()) != null && count < limit) {
@@ -24,12 +28,13 @@ public class Datos {
                 double[] doubleValues = new double[stringValues.length-1];
 
                 double[] o = {0,0,0,0,0,0,0,0,0,0,0};
-                //hacer la conversión del quality en formato binario
+                //hacer la conversión del dato quality en formato array
+                //si el bino tiene calidad 2 su array sera { 0,0,1,0,0,0,0....}
                 int idx=Integer.parseInt(stringValues[stringValues.length-1]);
                 o[idx]=1;
                 out.add(o);
 
-                //no contar las salidas
+                //leemos las entradas
                 for (int i = 0; i < stringValues.length-1; i++) {
                     doubleValues[i] = Double.parseDouble(stringValues[i].trim());
                 }
@@ -46,9 +51,8 @@ public class Datos {
         inputs = data.toArray(new double[0][]);
         outputs = out.toArray(new double[0][]);
 
-        //printData();
+        //normalizamos por columna
         normalize();
-        //normalizeGlobally();
         printData();
 
     }
@@ -79,35 +83,8 @@ public class Datos {
         max=Double.MIN_VALUE;
     }
 
-    public void normalizeGlobally() {
-        double globalMin = Double.MAX_VALUE;
-        double globalMax = Double.MIN_VALUE;
-
-        // Encontrar globalMin y globalMax
-        for (int i = 0; i < inputs.length; i++) {
-            for (int j = 0; j < inputs[0].length; j++) {
-                if (inputs[i][j] < globalMin) {
-                    globalMin = inputs[i][j];
-                }
-                if (inputs[i][j] > globalMax) {
-                    globalMax = inputs[i][j];
-                }
-            }
-        }
-
-        // Normalizar
-        for (int i = 0; i < inputs.length; i++) {
-            for (int j = 0; j < inputs[0].length; j++) {
-                inputs[i][j] = (inputs[i][j] - globalMin) / (globalMax - globalMin);
-            }
-        }
-    }
-
-
-
-
     public void printData(){
-        System.out.println("Entradas");
+        System.out.println("ENTRADAS");
         // Imprimir la matriz para verificar
         for (double[] row : inputs) {
             for (double value : row) {
