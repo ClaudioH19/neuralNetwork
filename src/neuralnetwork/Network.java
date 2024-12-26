@@ -9,14 +9,14 @@ public class Network {
     //double lambda=0.00001;
     //double decayRate = 0.9999;
     //testing
-    //double learning_rate = 0.0005;
-    //double lambda=0.000007;
-    //double decayRate = 0.99999;
+    double learning_rate = 0.001;
+    double lambda=0.7;
+    double decayRate = 0.9;
 
     //testing
-    double learning_rate = 0.005;
-    double lambda=0.0000007;
-    double decayRate = 0.99999;
+    //double learning_rate = 0.0005;
+    //double lambda=0.00000007;
+    //double decayRate = 0.9999;
 
     double[][] inputs;
     double[][] outputs_expected;
@@ -34,10 +34,26 @@ public class Network {
 
         //crear capas de neuronas
         for (int i=0;i<tam_layers;i++){
+
             ArrayList<Neuron> l=new ArrayList<>();
-            for (int j=0;j<tam_capa;j++){
-                l.add(new Neuron(tam_capa));
+
+            if(i==0){
+                for (int j=0;j<inputs[0].length;j++){
+                    l.add(new Neuron(inputs[0].length));
+                }
+            }else if(i==tam_layers-1){
+                for (int j=0;j<inputs[0].length;j++){
+                    l.add(new Neuron(layers.get(layers.size()-1).size()));
+                }
             }
+            else{
+                int num_neur=8;
+                for (int j=0;j<num_neur;j++){
+                    l.add(new Neuron(layers.get(layers.size()-1).size()));
+                }
+
+            }
+
             layers.add(l);
         }
 
@@ -46,10 +62,11 @@ public class Network {
     //recorre cada capa de izq a der y cada neurona de una capa para calcular su z y su h(z) o funcion de activacion
     public void forward(double[] inputs) {
 
-        double[] predictions = new double[tam_capa];
+
 
         //por cada capa
         for (int i=0;i<layers.size();i++){
+            double[] predictions = new double[layers.get(i).size()];
             //tomamos sus neuronas
             ArrayList<Neuron> l=layers.get(i);
 
@@ -114,7 +131,7 @@ public class Network {
                 //Calcular gradientes para las capas ocultas
                 else{
                     double sum=0;
-                    for(int j=0;j<tam_capa;j++) {
+                    for(int j=0;j<layers.get(i+1).size();j++) {
                         //vemos la capa de la derecha pues esta contiene los pesos y gradiente que necesitamos para el calculo
                         sum += l_d.get(j).delta_error * l_d.get(j).weights_behind[iter];
                     }

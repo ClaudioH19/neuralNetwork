@@ -30,7 +30,7 @@ public class NeuralNetwork {
             //11 neuronas con 1 capa de input y 2 capas: 1 hidden - 1 outputs
             Network net = new Network(11, datos.inputs, datos.outputs,2);
 
-            net.iterar(10000,1280); //desencadena el backpropagation y entrena hasta el idx 1280
+            net.iterar(5000,1280); //desencadena el backpropagation y entrena hasta el idx 1280
 
             //usamos un 80% de datos para entrenar y el 20% para testear
             System.out.println("Testing");
